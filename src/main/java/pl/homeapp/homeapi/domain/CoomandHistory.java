@@ -8,7 +8,7 @@ import lombok.Setter;
 @Entity
 @Getter
 @Setter
-public class Command {
+public class CoomandHistory {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Schema(description = "Unique identifier of command wchich can be used for remote devices", example = "1", required = true)

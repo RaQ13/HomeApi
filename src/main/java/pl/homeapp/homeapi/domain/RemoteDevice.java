@@ -15,7 +15,11 @@ public class RemoteDevice {
     private Long id;
     @Schema(description = "Brand of remote device", example = "WiZ", required = true)
     private String brand;
-    @Schema(description = "Model of remote device", example = "Candle", required = true)
+    @Schema(description = "Ip of remote device", example = "WiZ", required = true)
+    private String ip;
+    @Schema(description = "MAC address of remote device", example = "192.168.1.7", required = true)
+    private String mac;
+    @Schema(description = "Model of remote device", example = "AB:01:CD:02:EF:03", required = true)
     private String model;
     @Schema(description = "Software version of remote device", example = "1", required = false)
     private String softwareVersion;

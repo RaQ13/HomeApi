@@ -23,5 +23,5 @@ public class UserDevice {
     private String operationSystem;
 
     @OneToMany(mappedBy = "userDevice", cascade = CascadeType.ALL)
-    private List<Command> sentCommands;
+    private List<CoomandHistory> sentCoomandHistories;
 }
