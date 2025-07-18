@@ -22,7 +22,7 @@ public class HomeController {
         this.commandRepository = commandRepository;
     }
 
-    @Operation(summary = "Find Command by ID", description = "Returns a single Command", tags = {"command"})
+    @Operation(summary = "Find Command by ID", description = "Returns a single Command", tags = {"Command"})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successfully found",
                 content = @Content(schema = @Schema(implementation = Command.class))),

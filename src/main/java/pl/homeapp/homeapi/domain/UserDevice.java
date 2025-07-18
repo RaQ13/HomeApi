@@ -17,6 +17,6 @@ public class UserDevice {
     private String model;
     private String operationSystem;
 
-    @OneToMany(mappedBy = "command_id", cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "userDevice", cascade = CascadeType.ALL)
     private List<Command> sentCommands;
 }
