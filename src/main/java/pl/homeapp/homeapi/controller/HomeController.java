@@ -31,7 +31,12 @@ public class HomeController {
         this.remoteDeviceRepository = remoteDeviceRepository;
     }
 
-    @Operation(summary = "Find Command by ID", description = "Returns a single Command", tags = {"Command"})
+    /** ***             Get methods            *** */
+
+    /**
+     * @return single {@link CoomandHistory} by id.
+     * */
+    @Operation(summary = "Find Command by ID", description = "Returns a single Command from history", tags = {"Command history"})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successfully found",
                 content = @Content(schema = @Schema(implementation = CoomandHistory.class))),
@@ -42,6 +47,9 @@ public class HomeController {
         return commandHistoryRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException(id));
     }
 
+    /**
+     * @return <List> of all {@link RemoteDevice}.
+     * */
     @Operation(summary = "Find all Remote Device", description = "Returns all remote devices", tags = {"All Remote Devices"})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successfully found",
@@ -55,6 +63,9 @@ public class HomeController {
                 .orElseThrow(() -> new ResourceNotFoundException("No remote devices found"));
     }
 
+    /**
+     * @return single {@link RemoteDevice} by id.
+     * */
     @Operation(summary = "Find Remote Device by ID", description = "Returns a single remote device", tags = {"Remote Device"})
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successfully found",
@@ -66,12 +77,27 @@ public class HomeController {
         return remoteDeviceRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException(id));
     }
 
+    /** ***             Post methods            *** */
+
+    /**
+     * Creates new resource of {@link RemoteDevice} and saves it in {@link RemoteDeviceRepository}
+     *
+     * @param device - Object {@link RemoteDevice} to save, passed for save in JSON format
+     * @return {@link ResponseEntity} with saved object {@link RemoteDevice} and HTTP status.
+     */
     @PostMapping("/remote-devices")
     public ResponseEntity<RemoteDevice> createRemoteDevice(@RequestBody RemoteDevice device) {
         RemoteDevice saved = remoteDeviceRepository.save(device);
         return ResponseEntity.ok(saved);
     }
 
+    /**
+     * Creates new resource of {@link CoomandHistory} based on data from object {@link ApiCommandDTO}
+     * and saves it in {@link CommandHistoryRepository}. Resource is linked with existing {@link RemoteDevice}
+     *
+     * @param dto - Object {@link RemoteDevice} containing command data for save passed in JSON format.
+     * @return {@link ResponseEntity} with saved object {@link CoomandHistory}, text message and HTTP status.
+     */
     @PostMapping("/sendCommand")
     public ResponseEntity<?> sendCommandViaApi(@RequestBody ApiCommandDTO dto) {
         RemoteDevice remoteDevice = remoteDeviceRepository.findById(dto.getRemoteDeviceId())
@@ -80,7 +106,7 @@ public class HomeController {
         CoomandHistory command = new CoomandHistory();
         command.setBody(dto.getBody());
         command.setRemoteDevice(remoteDevice);
-        command.setUserDevice(null); // <--- to ustawienie jest domyślne, ale możesz jawnie wpisać
+        command.setUserDevice(null);
 
         commandHistoryRepository.save(command);
 
