@@ -16,6 +16,9 @@ import pl.homeapp.homeapi.exception.ResourceNotFoundException;
 import pl.homeapp.homeapi.repository.CommandHistoryRepository;
 import pl.homeapp.homeapi.repository.RemoteDeviceRepository;
 
+import java.util.List;
+import java.util.Optional;
+
 @RestController
 @RequestMapping("/home")
 public class HomeController {
@@ -37,6 +40,19 @@ public class HomeController {
     @GetMapping("/command/{id}")
     public CoomandHistory findCommandById(@PathVariable long id) {
         return commandHistoryRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException(id));
+    }
+
+    @Operation(summary = "Find all Remote Device", description = "Returns all remote devices", tags = {"All Remote Devices"})
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully found",
+                    content = @Content(schema = @Schema(implementation = RemoteDevice.class))),
+            @ApiResponse(responseCode = "404", description = "No remote devices")
+    })
+    @GetMapping("/remote-device/all")
+    public List<RemoteDevice> findAllRemoteDevices() {
+        return Optional.of(remoteDeviceRepository.findAll())
+                .filter(list -> !list.isEmpty())
+                .orElseThrow(() -> new ResourceNotFoundException("No remote devices found"));
     }
 
     @Operation(summary = "Find Remote Device by ID", description = "Returns a single remote device", tags = {"Remote Device"})
