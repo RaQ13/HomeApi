@@ -40,7 +40,8 @@ public class HomeController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successfully found",
                 content = @Content(schema = @Schema(implementation = CommandHistory.class))),
-            @ApiResponse(responseCode = "404", description = "Command not found")
+            @ApiResponse(responseCode = "404", description = "Command not found",
+                content = @Content(schema = @Schema(hidden = true)))
     })
     @GetMapping("/comman-history/{id}")
     public CommandHistory findCommandById(@PathVariable long id) {
@@ -54,13 +55,14 @@ public class HomeController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successfully found",
                     content = @Content(schema = @Schema(implementation = CommandHistory.class))),
-            @ApiResponse(responseCode = "404", description = "No commands found")
+            @ApiResponse(responseCode = "404", description = "No commands found",
+                    content = @Content(schema = @Schema(hidden = true))),
     })
     @GetMapping("/command-history/all")
     public List<CommandHistory> findAllCommandsHistory() {
         return Optional.of(commandHistoryRepository.findAll())
                 .filter(list -> !list.isEmpty())
-                .orElseThrow(() -> new ResourceNotFoundException("No remote devices found"));
+                .orElseThrow(() -> new ResourceNotFoundException("No commands in history found"));
     }
 
     /**
@@ -70,7 +72,8 @@ public class HomeController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successfully found",
                     content = @Content(schema = @Schema(implementation = RemoteDevice.class))),
-            @ApiResponse(responseCode = "404", description = "Remote Device not found")
+            @ApiResponse(responseCode = "404", description = "Remote Device not found",
+                    content = @Content(schema = @Schema(hidden = true))),
     })
     @GetMapping("/remote-device/{id}")
     public RemoteDevice findRemoteDeviceById(@PathVariable long id) {
@@ -84,7 +87,8 @@ public class HomeController {
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successfully found",
                     content = @Content(schema = @Schema(implementation = RemoteDevice.class))),
-            @ApiResponse(responseCode = "404", description = "No remote devices")
+            @ApiResponse(responseCode = "404", description = "No remote devices",
+                    content = @Content(schema = @Schema(hidden = true))),
     })
     @GetMapping("/remote-device/all")
     public List<RemoteDevice> findAllRemoteDevices() {
