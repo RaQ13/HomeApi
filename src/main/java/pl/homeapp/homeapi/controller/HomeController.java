@@ -18,9 +18,12 @@ import pl.homeapp.homeapi.dto.ApiCommandDTO;
 import pl.homeapp.homeapi.exception.ResourceNotFoundException;
 import pl.homeapp.homeapi.repository.CommandHistoryRepository;
 import pl.homeapp.homeapi.repository.RemoteDeviceRepository;
+import pl.homeapp.homeapi.service.CommandsService;
 import pl.homeapp.homeapi.utils.UdpClient;
 
+import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -29,10 +32,12 @@ public class HomeController {
 
     private final CommandHistoryRepository commandHistoryRepository;
     private final RemoteDeviceRepository remoteDeviceRepository;
+    private final CommandsService commandFileService;
 
-    public HomeController(CommandHistoryRepository commandHistoryRepository, RemoteDeviceRepository remoteDeviceRepository) {
+    public HomeController(CommandHistoryRepository commandHistoryRepository, RemoteDeviceRepository remoteDeviceRepository, CommandsService commandFileService) {
         this.commandHistoryRepository = commandHistoryRepository;
         this.remoteDeviceRepository = remoteDeviceRepository;
+        this.commandFileService = commandFileService;
     }
 
     /** ***             Get methods            *** */
@@ -40,14 +45,14 @@ public class HomeController {
     /**
      * @return single {@link CommandHistory} by id.
      * */
-    @Operation(summary = "Find Command history element by ID", description = "Returns a single Command from history", tags = {"Command history"}, operationId = "GetSingleCommand")
+    @Operation(summary = "Find Command history element by ID", description = "Returns a single Command from history", tags = {"Commands"}, operationId = "GetSingleCommand")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successfully found",
                 content = @Content(schema = @Schema(implementation = CommandHistory.class))),
             @ApiResponse(responseCode = "404", description = "Command not found",
                 content = @Content(schema = @Schema(hidden = true)))
     })
-    @GetMapping("/comman-history/{id}")
+    @GetMapping("/commands-history/{id}")
     public CommandHistory findCommandById(@PathVariable long id) {
         return commandHistoryRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException(id));
     }
@@ -55,18 +60,33 @@ public class HomeController {
     /**
      * @return <List> of all {@link CommandHistory}.
      * */
-    @Operation(summary = "Find all Command history elements", description = "Returns all commands history", tags = {"Command history"}, operationId = "GetAllCommand")
+    @Operation(summary = "Find all Command history elements", description = "Returns all commands history", tags = {"Commands"}, operationId = "GetAllCommand")
     @ApiResponses(value = {
             @ApiResponse(responseCode = "200", description = "Successfully found",
                     content = @Content(schema = @Schema(implementation = CommandHistory.class))),
             @ApiResponse(responseCode = "404", description = "No commands found",
                     content = @Content(schema = @Schema(hidden = true))),
     })
-    @GetMapping("/command-history/all")
+    @GetMapping("/commands-history/all")
     public List<CommandHistory> findAllCommandsHistory() {
         return Optional.of(commandHistoryRepository.findAll())
                 .filter(list -> !list.isEmpty())
                 .orElseThrow(() -> new ResourceNotFoundException("No commands in history found"));
+    }
+
+    /**
+     * Shows a <List> of all avaiable commands exisitng in static/commands
+     */
+    @Operation(summary = "View all avaiable commands", description = "Returns a list of all avaiable commans", tags = {"Commands"}, operationId = "GetListOfCommands")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully found",
+                    content = @Content(schema = @Schema(implementation = ApiCommandDTO.class))),
+            @ApiResponse(responseCode = "404", description = "No commands found",
+                    content = @Content(schema = @Schema(hidden = true))),
+    })
+    @GetMapping("/available-commands")
+    public Map<String, Object > listCommands() throws IOException {
+        return commandFileService.listAvailableCommands();
     }
 
     /**
@@ -109,7 +129,7 @@ public class HomeController {
      * @param device - Object {@link RemoteDevice} to save, passed for save in JSON format
      * @return {@link ResponseEntity} with saved object {@link RemoteDevice} and HTTP status.
      */
-    @Operation(operationId = "PostRemoteDevice", tags = {"Remote Device"})
+    @Operation(summary = "Create remote device", operationId = "PostRemoteDevice", tags = {"Remote Device"})
     @PostMapping("/remote-devices")
     public ResponseEntity<RemoteDevice> createRemoteDevice(
             @RequestBody RemoteDevice device) {
@@ -121,10 +141,10 @@ public class HomeController {
      * Creates new resource of {@link CommandHistory} based on data from object {@link ApiCommandDTO}
      * and saves it in {@link CommandHistoryRepository}. Resource is linked with existing {@link RemoteDevice}
      *
-     * @param dto - Object {@link RemoteDevice} containing command data for save passed in JSON format.
+     * @param request - Object {@link RemoteDevice} containing command data for save passed in JSON format.
      * @return {@link ResponseEntity} with saved object {@link CommandHistory}, text message and HTTP status.
      */
-    @Operation(operationId = "PostSendCommand", tags = {"Command history"}, requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+    @Operation(summary= "Send command", operationId = "PostSendCommand", tags = {"Commands"}, requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
             required = true,
             content = @Content(
                     examples = @ExampleObject(
@@ -143,15 +163,15 @@ public class HomeController {
             )
     ))
     @PostMapping("/send-command")
-    public ResponseEntity<?> sendCommandViaApi(@RequestBody ApiCommandDTO dto) throws JsonProcessingException {
-        RemoteDevice remoteDevice = remoteDeviceRepository.findById(dto.getRemoteDeviceId())
+    public ResponseEntity<?> sendCommandViaApi(@RequestBody ApiCommandDTO request) throws JsonProcessingException {
+        RemoteDevice remoteDevice = remoteDeviceRepository.findById(request.getRemoteDeviceId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "RemoteDevice not found"));
 
-        String stringified = new ObjectMapper().writeValueAsString(dto.getBody());
+        String stringifiedCommand = new ObjectMapper().writeValueAsString(request.getBody());
 //        System.out.println(stringified);
 
         CommandHistory command = new CommandHistory();
-        command.setBody(stringified);
+        command.setBody(stringifiedCommand);
         command.setRemoteDevice(remoteDevice);
         command.setUserDevice(null);
 
