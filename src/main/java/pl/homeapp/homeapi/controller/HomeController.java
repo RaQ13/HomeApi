@@ -22,6 +22,8 @@ import pl.homeapp.homeapi.service.CommandsService;
 import pl.homeapp.homeapi.utils.UdpClient;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -170,10 +172,15 @@ public class HomeController {
         String stringifiedCommand = new ObjectMapper().writeValueAsString(request.getBody());
 //        System.out.println(stringified);
 
+        LocalDateTime now = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss");
+        String formattedNow = now.format(formatter);
+
         CommandHistory command = new CommandHistory();
         command.setBody(stringifiedCommand);
         command.setRemoteDevice(remoteDevice);
         command.setUserDevice(null);
+        command.setTimeStamp(formattedNow);
 
         UdpClient.sendCommand(command.getBody(), remoteDevice.getIp());
 

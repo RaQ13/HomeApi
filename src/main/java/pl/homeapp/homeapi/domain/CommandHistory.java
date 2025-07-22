@@ -16,6 +16,9 @@ public class CommandHistory {
     @Schema(description = "Body of command", example = "'setState: {power: off}'", required = true)
     private String body;
 
+    @Schema(description = "Date of current command execution", example = "02.04.2025 12:54:11")
+    private String timeStamp;
+
     @ManyToOne
     @JoinColumn(name = "user_device_id")
     private UserDevice userDevice;

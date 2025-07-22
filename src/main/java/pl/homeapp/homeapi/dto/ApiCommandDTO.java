@@ -5,10 +5,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.Map;
 
 public class ApiCommandDTO {
-//    @Schema(description = "ID urządzenia zdalnego", example = "10", required = true)
+    @Schema(description = "ID urządzenia zdalnego", example = "3", required = true)
     private Long remoteDeviceId;
 
-//    @Schema(description = "Treść komendy", example = "setState: {power: on}", required = true)
+    @Schema(description = "Treść komendy", example = "setState: {power: on}", required = true)
     private Map<String, Object> body;
 
     public Long getRemoteDeviceId() {
