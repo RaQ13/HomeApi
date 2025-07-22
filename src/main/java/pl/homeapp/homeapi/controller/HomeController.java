@@ -13,11 +13,15 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import pl.homeapp.homeapi.domain.CommandHistory;
+import pl.homeapp.homeapi.domain.Home;
 import pl.homeapp.homeapi.domain.RemoteDevice;
+import pl.homeapp.homeapi.domain.Room;
 import pl.homeapp.homeapi.dto.ApiCommandDTO;
 import pl.homeapp.homeapi.exception.ResourceNotFoundException;
 import pl.homeapp.homeapi.repository.CommandHistoryRepository;
+import pl.homeapp.homeapi.repository.HomeRepository;
 import pl.homeapp.homeapi.repository.RemoteDeviceRepository;
+import pl.homeapp.homeapi.repository.RoomRepository;
 import pl.homeapp.homeapi.service.CommandsService;
 import pl.homeapp.homeapi.utils.UdpClient;
 
@@ -33,12 +37,17 @@ import java.util.Optional;
 public class HomeController {
 
     private final CommandHistoryRepository commandHistoryRepository;
+    private final HomeRepository homeRepository;
     private final RemoteDeviceRepository remoteDeviceRepository;
+    private final RoomRepository roomRepository;
+
     private final CommandsService commandFileService;
 
-    public HomeController(CommandHistoryRepository commandHistoryRepository, RemoteDeviceRepository remoteDeviceRepository, CommandsService commandFileService) {
+    public HomeController(CommandHistoryRepository commandHistoryRepository, HomeRepository homeRepository, RemoteDeviceRepository remoteDeviceRepository, RoomRepository roomRepository, CommandsService commandFileService) {
         this.commandHistoryRepository = commandHistoryRepository;
+        this.homeRepository = homeRepository;
         this.remoteDeviceRepository = remoteDeviceRepository;
+        this.roomRepository = roomRepository;
         this.commandFileService = commandFileService;
     }
 
@@ -92,6 +101,38 @@ public class HomeController {
     }
 
     /**
+     * @return single {@link Home} by id.
+     * */
+    @Operation(summary = "Find Home by ID", description = "Returns a single home", tags = {"Home"}, operationId = "GetSingleHome")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully found",
+                    content = @Content(schema = @Schema(implementation = Home.class))),
+            @ApiResponse(responseCode = "404", description = "Home not found",
+                    content = @Content(schema = @Schema(hidden = true))),
+    })
+    @GetMapping("/home/{id}")
+    public Home findHomeById(@PathVariable long id) {
+        return homeRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException(id));
+    }
+
+    /**
+     * @return <List> of all {@link Home}.
+     * */
+    @Operation(summary = "Find all saved Homes", description = "Returns all homes", tags = {"Home"}, operationId = "GetAllHomes")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully found",
+                    content = @Content(schema = @Schema(implementation = Home.class))),
+            @ApiResponse(responseCode = "404", description = "No homes saved",
+                    content = @Content(schema = @Schema(hidden = true))),
+    })
+    @GetMapping("/home/all")
+    public List<Home> findAllHomes() {
+        return Optional.of(homeRepository.findAll())
+                .filter(list -> !list.isEmpty())
+                .orElseThrow(() -> new ResourceNotFoundException("No saved homes found"));
+    }
+
+    /**
      * @return single {@link RemoteDevice} by id.
      * */
     @Operation(summary = "Find Remote Device by ID", description = "Returns a single remote device", tags = {"Remote Device"}, operationId = "GetSingleRemoteDevice")
@@ -121,6 +162,38 @@ public class HomeController {
         return Optional.of(remoteDeviceRepository.findAll())
                 .filter(list -> !list.isEmpty())
                 .orElseThrow(() -> new ResourceNotFoundException("No remote devices found"));
+    }
+
+    /**
+     * @return single {@link Room} by id.
+     * */
+    @Operation(summary = "Find Room by ID", description = "Returns a single room", tags = {"Room"}, operationId = "GetSingleRoom")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully found",
+                    content = @Content(schema = @Schema(implementation = Room.class))),
+            @ApiResponse(responseCode = "404", description = "Remote Device not found",
+                    content = @Content(schema = @Schema(hidden = true))),
+    })
+    @GetMapping("/room/{id}")
+    public Room findRoomById(@PathVariable long id) {
+        return roomRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException(id));
+    }
+
+    /**
+     * @return <List> of all {@link Room}.
+     * */
+    @Operation(summary = "Find all Rooms declared in home", description = "Returns all rooms in home", tags = {"Room"}, operationId = "GetAllRooms")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully found",
+                    content = @Content(schema = @Schema(implementation = Room.class))),
+            @ApiResponse(responseCode = "404", description = "No remote devices",
+                    content = @Content(schema = @Schema(hidden = true))),
+    })
+    @GetMapping("/room/all")
+    public List<Room> findAllRooms() {
+        return Optional.of(roomRepository.findAll())
+                .filter(list -> !list.isEmpty())
+                .orElseThrow(() -> new ResourceNotFoundException("No rooms found"));
     }
 
     /** ***             Post methods            *** */
