@@ -1,6 +1,7 @@
 package pl.homeapp.homeapi.controller;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -8,6 +9,8 @@ import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -26,6 +29,7 @@ import pl.homeapp.homeapi.service.CommandsService;
 import pl.homeapp.homeapi.utils.UdpClient;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -260,5 +264,43 @@ public class HomeController {
         commandHistoryRepository.save(command);
 
         return ResponseEntity.ok("Command sent via API successfully.");
+    }
+
+    /**
+     * Creates new resource of {@link CommandHistory} based on data from specyfic {@param filename}
+     * and saves it in {@link CommandHistoryRepository}. Resource is linked with existing {@link RemoteDevice}
+     *
+     * @param fileName - Object from choosen file existing in /static/commands containing command data for save passed in JSON format.
+     * @param remoteDeviceId - an id of {@link RemoteDevice}
+     * @return {@link ResponseEntity} with saved object {@link CommandHistory}, text message and HTTP status.
+     */
+    @Operation(summary= "Send command from file", operationId = "PostSendCommandFromFile", tags = {"Commands"}
+    )
+    @PostMapping("/send-command-from-file/{fileName}")
+    public ResponseEntity<String> sendCommandFromFile(@PathVariable String fileName, @RequestParam long remoteDeviceId) throws IOException {
+        Resource resource = new ClassPathResource("static/commands/" + fileName);
+        if (!resource.exists()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "File not found");
+        }
+
+        try (InputStream is = resource.getInputStream()) {
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode jsonNode = mapper.readTree(is);
+            System.out.println(jsonNode);
+
+            RemoteDevice device = remoteDeviceRepository.findById(remoteDeviceId)
+                    .orElseThrow(() -> new ResourceNotFoundException(remoteDeviceId));
+
+            // Wysyłka komendy
+            UdpClient.sendCommand(jsonNode.toString(), device.getIp());
+
+            // Opcjonalne logowanie w historii
+            CommandHistory history = new CommandHistory();
+            history.setRemoteDevice(device);
+            history.setBody(jsonNode.toString());
+            commandHistoryRepository.save(history);
+
+            return ResponseEntity.ok("Command sent.");
+        }
     }
 }
