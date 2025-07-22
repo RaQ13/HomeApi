@@ -1,7 +1,10 @@
 package pl.homeapp.homeapi.controller;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
@@ -15,6 +18,7 @@ import pl.homeapp.homeapi.dto.ApiCommandDTO;
 import pl.homeapp.homeapi.exception.ResourceNotFoundException;
 import pl.homeapp.homeapi.repository.CommandHistoryRepository;
 import pl.homeapp.homeapi.repository.RemoteDeviceRepository;
+import pl.homeapp.homeapi.utils.UdpClient;
 
 import java.util.List;
 import java.util.Optional;
@@ -107,7 +111,8 @@ public class HomeController {
      */
     @Operation(operationId = "PostRemoteDevice", tags = {"Remote Device"})
     @PostMapping("/remote-devices")
-    public ResponseEntity<RemoteDevice> createRemoteDevice(@RequestBody RemoteDevice device) {
+    public ResponseEntity<RemoteDevice> createRemoteDevice(
+            @RequestBody RemoteDevice device) {
         RemoteDevice saved = remoteDeviceRepository.save(device);
         return ResponseEntity.ok(saved);
     }
@@ -119,19 +124,41 @@ public class HomeController {
      * @param dto - Object {@link RemoteDevice} containing command data for save passed in JSON format.
      * @return {@link ResponseEntity} with saved object {@link CommandHistory}, text message and HTTP status.
      */
-    @Operation(operationId = "PostSendCommand", tags = {"Command history"})
+    @Operation(operationId = "PostSendCommand", tags = {"Command history"}, requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            required = true,
+            content = @Content(
+                    examples = @ExampleObject(
+                            name = "Example turn off command",
+                            summary = "Sample payload for WiZ bulb",
+                            value= """
+                                    {
+                                       "remoteDeviceId": 3,
+                                       "body": { \s
+                                        "method": "setState",
+                                        "params": {"state": "false"}
+                                       }
+                                     }
+                                   """
+                    )
+            )
+    ))
     @PostMapping("/send-command")
-    public ResponseEntity<?> sendCommandViaApi(@RequestBody ApiCommandDTO dto) {
+    public ResponseEntity<?> sendCommandViaApi(@RequestBody ApiCommandDTO dto) throws JsonProcessingException {
         RemoteDevice remoteDevice = remoteDeviceRepository.findById(dto.getRemoteDeviceId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "RemoteDevice not found"));
 
+        String stringified = new ObjectMapper().writeValueAsString(dto.getBody());
+//        System.out.println(stringified);
+
         CommandHistory command = new CommandHistory();
-        command.setBody(dto.getBody());
+        command.setBody(stringified);
         command.setRemoteDevice(remoteDevice);
         command.setUserDevice(null);
 
+        UdpClient.sendCommand(command.getBody(), remoteDevice.getIp());
+
         commandHistoryRepository.save(command);
 
-        return ResponseEntity.ok("Command sent via API.");
+        return ResponseEntity.ok("Command sent via API successfully.");
     }
 }

@@ -1,0 +1,20 @@
+    @Operation(operationId = "PostSendCommand", tags = {"Command history"}, requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+            required = true,
+            content = @Content(
+                    schema = @Schema(implementation = RemoteDevice.class),
+                    examples = @ExampleObject( <-- nadpisuje przykładowy kod
+                            name = "Example Remote Device",
+                            summary = "Sample payload for WiZ bulb",
+                            value = """
+                            {
+                              "brand": "WiZ",
+                              "ip": "192.168.100.13",
+                              "mac": "D8:A0:11:3D:87:B4",
+                              "model": "candle",
+                              "softwareVersion": "1.0.3",
+                              "type": "bulb"
+                            }
+                            """
+                    )
+            )
+    ))
