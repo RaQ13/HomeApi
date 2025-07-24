@@ -15,16 +15,10 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
-import pl.homeapp.homeapi.domain.CommandHistory;
-import pl.homeapp.homeapi.domain.Home;
-import pl.homeapp.homeapi.domain.RemoteDevice;
-import pl.homeapp.homeapi.domain.Room;
+import pl.homeapp.homeapi.domain.*;
 import pl.homeapp.homeapi.dto.ApiCommandDTO;
 import pl.homeapp.homeapi.exception.ResourceNotFoundException;
-import pl.homeapp.homeapi.repository.CommandHistoryRepository;
-import pl.homeapp.homeapi.repository.HomeRepository;
-import pl.homeapp.homeapi.repository.RemoteDeviceRepository;
-import pl.homeapp.homeapi.repository.RoomRepository;
+import pl.homeapp.homeapi.repository.*;
 import pl.homeapp.homeapi.service.CommandsService;
 import pl.homeapp.homeapi.utils.UdpClient;
 
@@ -44,14 +38,16 @@ public class HomeController {
     private final HomeRepository homeRepository;
     private final RemoteDeviceRepository remoteDeviceRepository;
     private final RoomRepository roomRepository;
+    private final UserDeviceRepository userDeviceRepository;
 
     private final CommandsService commandFileService;
 
-    public HomeController(CommandHistoryRepository commandHistoryRepository, HomeRepository homeRepository, RemoteDeviceRepository remoteDeviceRepository, RoomRepository roomRepository, CommandsService commandFileService) {
+    public HomeController(CommandHistoryRepository commandHistoryRepository, HomeRepository homeRepository, RemoteDeviceRepository remoteDeviceRepository, RoomRepository roomRepository, UserDeviceRepository userDeviceRepository, CommandsService commandFileService) {
         this.commandHistoryRepository = commandHistoryRepository;
         this.homeRepository = homeRepository;
         this.remoteDeviceRepository = remoteDeviceRepository;
         this.roomRepository = roomRepository;
+        this.userDeviceRepository = userDeviceRepository;
         this.commandFileService = commandFileService;
     }
 
@@ -200,6 +196,38 @@ public class HomeController {
                 .orElseThrow(() -> new ResourceNotFoundException("No rooms found"));
     }
 
+    /**
+     * @return single {@link UserDevice} by id.
+     * */
+    @Operation(summary = "Find User Device by ID", description = "Returns a single user device", tags = {"User Device"}, operationId = "GetSingleUserDevice")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully found",
+                    content = @Content(schema = @Schema(implementation = UserDevice.class))),
+            @ApiResponse(responseCode = "404", description = "User Device not found",
+                    content = @Content(schema = @Schema(hidden = true))),
+    })
+    @GetMapping("/user-device/{id}")
+    public UserDevice findUserDeviceById(@PathVariable long id) {
+        return userDeviceRepository.findById(id).orElseThrow(() -> new ResourceNotFoundException(id));
+    }
+
+    /**
+     * @return <List> of all {@link UserDevice}.
+     * */
+    @Operation(summary = "Find all user Device", description = "Returns all user devices", tags = {"User Device"}, operationId = "GetAllUserDevices")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Successfully found",
+                    content = @Content(schema = @Schema(implementation = UserDevice.class))),
+            @ApiResponse(responseCode = "404", description = "No user devices",
+                    content = @Content(schema = @Schema(hidden = true))),
+    })
+    @GetMapping("/user-device/all")
+    public List<UserDevice> findAllUserDevices() {
+        return Optional.of(userDeviceRepository.findAll())
+                .filter(list -> !list.isEmpty())
+                .orElseThrow(() -> new ResourceNotFoundException("No user devices found"));
+    }
+
     /** ***             Post methods            *** */
 
     /**
@@ -213,6 +241,20 @@ public class HomeController {
     public ResponseEntity<RemoteDevice> createRemoteDevice(
             @RequestBody RemoteDevice device) {
         RemoteDevice saved = remoteDeviceRepository.save(device);
+        return ResponseEntity.ok(saved);
+    }
+
+    /**
+     * Creates new resource of {@link UserDevice} and saves it in {@link UserDeviceRepository}
+     *
+     * @param device - Object {@link UserDevice} to save, passed for save in JSON format
+     * @return {@link ResponseEntity} with saved object {@link UserDevice} and HTTP status.
+     */
+    @Operation(summary = "Create user device", operationId = "PostUserDevice", tags = {"User Device"})
+    @PostMapping("/user-devices")
+    public ResponseEntity<UserDevice> createUserDevice(
+            @RequestBody UserDevice device) {
+        UserDevice saved = userDeviceRepository.save(device);
         return ResponseEntity.ok(saved);
     }
 
